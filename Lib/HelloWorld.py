@@ -5,6 +5,7 @@ import numpy as np
 import os
 
 MODEL_PATH = "../model/model_%s_%s.ckpt"
+TB_PATH = "../logs/1/train"
 EPOCH = 10000
 LEARNING_RATE = 0.002
 
@@ -34,21 +35,31 @@ def train_gate():
     error = tf.add(tf.square(diff), tf.sqrt(tf.abs(diff)))
     train = tf.train.AdamOptimizer(learning_rate=LEARNING_RATE).minimize(error)
     saver = tf.train.Saver(max_to_keep=10)
+
+    tf.summary.histogram("w1", w1)
+
+
     model = tf.global_variables_initializer()
 
     with tf.Session() as sess:
+        tb_writer = tf.summary.FileWriter(TB_PATH, sess.graph)
+
         sess.run(model)
         for i in range(EPOCH):
             errorTotal = 0.0
             # if (0 == i % (EPOCH / 10)):
             #     print(str(i) + ":")
             for gate_state in range(4):
-                oO, trainO, errorO, wO, bO, xO = sess.run([o, train, error, w2, b2, x],
+                tb_merge = tf.summary.merge_all()
+
+                summary, oO, trainO, errorO, wO, bO, xO = sess.run([tb_merge, o, train, error, w2, b2, x],
                                                           feed_dict={
                                                               x: np.expand_dims(np.array(InX[gate_state]), axis=1),
                                                               oExpected: np.expand_dims(np.array(OutX[gate_state]),
                                                                                         axis=0)
                                                           })
+                tb_writer.add_summary(summary, gate_state)
+
                 if (0 == i % (EPOCH / 10)):
                     # print("x: " + str(xO))
                     # print("o: " + str(oO[0][0]))
