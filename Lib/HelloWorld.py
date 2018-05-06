@@ -28,7 +28,7 @@ def train_gate():
 
     w = tf.Variable([12.0, -2.0], dtype=tf.float32, name="w")
     b = tf.Variable(-4.0, dtype=tf.float32, name="b")
-    oRaw = tf.add(tf.add(tf.multiply(w[0], o1), tf.multiply(w[1], o2)), b)
+    oRaw = tf.sigmoid(tf.add(tf.add(tf.multiply(w[0], o1), tf.multiply(w[1], o2)), b))
     o = tf.cond(oRaw[0][0] > 0, lambda: tf.divide(oRaw[0][0], oRaw[0][0]), lambda: tf.subtract(oRaw[0][0], oRaw[0][0]))
 
     oExpected = tf.placeholder(dtype=tf.float32, shape=[1])
@@ -36,7 +36,7 @@ def train_gate():
     # error = tf.add(tf.square(diff), tf.sqrt(tf.abs(diff)))
     # train = tf.train.AdamOptimizer(learning_rate=LEARNING_RATE).minimize(error)
     error = tf.square(tf.subtract(oRaw[0][0], oExpected))
-    train = tf.train.GradientDescentOptimizer(learning_rate=0.002).minimize(error)
+    train = tf.train.AdamOptimizer(learning_rate=0.002).minimize(error)
     saver = tf.train.Saver(max_to_keep=10)
 
     if ENABLE_TENSORBOARD:
@@ -65,9 +65,9 @@ def train_gate():
             for gate_state in range(4):
                 tb_merge = tf.summary.merge_all()
 
-                oO, trainO, errorO, wO, bO, xO \
+                trainO, oO, errorO, wO, bO, xO \
                     = sess.run(
-                    [o, train, error, w2, b2, x],
+                    [train, oRaw, error, w2, b2, x],
                     feed_dict={
                         x: np.expand_dims(np.array(InX[gate_state]),
                                           axis=1),
@@ -84,14 +84,14 @@ def train_gate():
                     tb_writer.add_summary(tb_summary, gate_state)
 
                 if (0 == i % (EPOCH / 10)):
-                    # print("x: " + str(xO))
-                    # print("o: " + str(oO[0][0]))
+                    print("x: " + str(xO))
+                    print("o: " + str(oO[0][0]))
                     # print("error: " + str(errorO[0]))
                     errorTotal += errorO[0]
-                    print("w: " + str(wO))
-                    print("b: " + str(bO))
-                    # print("\n")
-            if (0 == i % (EPOCH / 10)):
+                    # print("w: " + str(wO))
+                    # print("b: " + str(bO))
+                    print("\n")
+            if 0 == i % (EPOCH / 10):
                 print("error: " + str(errorTotal))
                 print("\n")
 
