@@ -8,6 +8,7 @@ MODEL_PATH = "../model/model_%s_%s.ckpt"
 TB_PATH = "../logs/1/train"
 EPOCH = 10000
 LEARNING_RATE = 0.002
+ENABLE_TENSORBOARD = False
 
 
 def train_gate():
@@ -17,34 +18,46 @@ def train_gate():
     # x = tf.Variable([[2.0], [-2.0]], dtype=tf.float32)
     x = tf.placeholder(dtype=tf.float32, shape=[2, 1])
 
-    w1 = tf.Variable([[1.0], [2.0]], dtype=tf.float32, name="w")
-    b1 = tf.Variable([2.0], dtype=tf.float32, name="b")
+    w1 = tf.Variable([[1.0], [2.0]], dtype=tf.float32, name="w1")
+    b1 = tf.Variable([2.0], dtype=tf.float32, name="b1")
     o1 = tf.add(tf.matmul(tf.transpose(x), w1), b1)
 
-    w2 = tf.Variable([[3.0], [8.0]], dtype=tf.float32, name="w")
-    b2 = tf.Variable([14.0], dtype=tf.float32, name="b")
+    w2 = tf.Variable([[3.0], [8.0]], dtype=tf.float32, name="w2")
+    b2 = tf.Variable([14.0], dtype=tf.float32, name="b2")
     o2 = tf.add(tf.matmul(tf.transpose(x), w2), b2)
 
     w = tf.Variable([12.0, -2.0], dtype=tf.float32, name="w")
     b = tf.Variable(-4.0, dtype=tf.float32, name="b")
     oRaw = tf.add(tf.add(tf.multiply(w[0], o1), tf.multiply(w[1], o2)), b)
-    o = tf.cond(oRaw[0][0] > 0, lambda: [[1.0]], lambda: [[0.0]])
+    o = tf.cond(oRaw[0][0] > 0, lambda: tf.divide(oRaw[0][0], oRaw[0][0]), lambda: tf.subtract(oRaw[0][0], oRaw[0][0]))
 
     oExpected = tf.placeholder(dtype=tf.float32, shape=[1])
-    diff = tf.subtract(o[0][0], oExpected)
-    error = tf.add(tf.square(diff), tf.sqrt(tf.abs(diff)))
-    train = tf.train.AdamOptimizer(learning_rate=LEARNING_RATE).minimize(error)
+    # diff = tf.subtract(o, oExpected)
+    # error = tf.add(tf.square(diff), tf.sqrt(tf.abs(diff)))
+    # train = tf.train.AdamOptimizer(learning_rate=LEARNING_RATE).minimize(error)
+    error = tf.square(tf.subtract(oRaw[0][0], oExpected))
+    train = tf.train.GradientDescentOptimizer(learning_rate=0.002).minimize(error)
     saver = tf.train.Saver(max_to_keep=10)
 
-    tf.summary.histogram("w1", w1)
-
+    if ENABLE_TENSORBOARD:
+        tf.summary.histogram("w1", w1)
+        tf.summary.histogram("b1", b1)
+        tf.summary.histogram("w2", w2)
+        tf.summary.histogram("b2", b2)
+        tf.summary.histogram("w", w)
+        tf.summary.histogram("b", b)
 
     model = tf.global_variables_initializer()
 
     with tf.Session() as sess:
-        tb_writer = tf.summary.FileWriter(TB_PATH, sess.graph)
+
+        tb_writer = None
+        if ENABLE_TENSORBOARD:
+            tb_writer = tf.summary.FileWriter(TB_PATH, sess.graph)
 
         sess.run(model)
+        w2O = sess.run(w2)
+        print(w2O)
         for i in range(EPOCH):
             errorTotal = 0.0
             # if (0 == i % (EPOCH / 10)):
@@ -52,13 +65,23 @@ def train_gate():
             for gate_state in range(4):
                 tb_merge = tf.summary.merge_all()
 
-                summary, oO, trainO, errorO, wO, bO, xO = sess.run([tb_merge, o, train, error, w2, b2, x],
-                                                          feed_dict={
-                                                              x: np.expand_dims(np.array(InX[gate_state]), axis=1),
-                                                              oExpected: np.expand_dims(np.array(OutX[gate_state]),
-                                                                                        axis=0)
-                                                          })
-                tb_writer.add_summary(summary, gate_state)
+                oO, trainO, errorO, wO, bO, xO \
+                    = sess.run(
+                    [o, train, error, w2, b2, x],
+                    feed_dict={
+                        x: np.expand_dims(np.array(InX[gate_state]),
+                                          axis=1),
+                        oExpected: np.expand_dims(
+                            np.array(OutX[gate_state]),
+                            axis=0)
+                    })
+
+                tb_summary = None
+                if ENABLE_TENSORBOARD:
+                    tb_summary = sess.run(tb_merge)
+
+                if ENABLE_TENSORBOARD:
+                    tb_writer.add_summary(tb_summary, gate_state)
 
                 if (0 == i % (EPOCH / 10)):
                     # print("x: " + str(xO))
