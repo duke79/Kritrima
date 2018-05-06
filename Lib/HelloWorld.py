@@ -4,14 +4,12 @@ import tensorflow as tf
 import numpy as np
 import os
 
-MODEL_PATH = "../model/model_%s_%s.ckpt"
-TB_PATH = "../logs/1/train"
-EPOCH = 10000
-LEARNING_RATE = 0.02
-ENABLE_TENSORBOARD = False
 
+def train_gate(TEST=False, EPOCH=10000,
+               LEARNING_RATE=0.02, ENABLE_TENSORBOARD=False,
+               TB_PATH="../logs/1/train", MODEL_PATH_ARGS=(4000, 80816)):
+    MODEL_PATH = "../model/model_%s_%s.ckpt"
 
-def train_gate():
     InX = [[1, 1], [1, 0], [0, 1], [0, 0]]
     OutX = [1, 0, 0, 0]
 
@@ -49,31 +47,53 @@ def train_gate():
     model = tf.global_variables_initializer()
 
     with tf.Session() as sess:
+        if TEST:
+            saver.restore(sess, MODEL_PATH % (MODEL_PATH_ARGS[0], MODEL_PATH_ARGS[1]))
+            print("w1" + str(w1.eval()))
+            print("b1" + str(b1.eval()))
+            print("w2" + str(w2.eval()))
+            print("b2" + str(b2.eval()))
+            print("w" + str(w.eval()))
+            print("b" + str(b.eval()))
+            print("\n")
+        else:
+            sess.run(model)
 
         tb_writer = None
         if ENABLE_TENSORBOARD:
             tb_writer = tf.summary.FileWriter(TB_PATH, sess.graph)
 
-        sess.run(model)
-        w2O = sess.run(w2)
-        print(w2O)
+        if TEST:
+            EPOCH = 1
+
         for i in range(EPOCH):
             errorTotal = 0.0
-            # if (0 == i % (EPOCH / 10)):
-            #     print(str(i) + ":")
             for gate_state in range(4):
-                tb_merge = tf.summary.merge_all()
+                tb_merge = None
+                if TEST:
+                    oO, errorO, wO, bO, xO \
+                        = sess.run(
+                        [oRaw, error, w2, b2, x],
+                        feed_dict={
+                            x: np.expand_dims(np.array(InX[gate_state]),
+                                              axis=1),
+                            oExpected: np.expand_dims(
+                                np.array(OutX[gate_state]),
+                                axis=0)
+                        })
+                else:
+                    tb_merge = tf.summary.merge_all()
 
-                trainO, oO, errorO, wO, bO, xO \
-                    = sess.run(
-                    [train, oRaw, error, w2, b2, x],
-                    feed_dict={
-                        x: np.expand_dims(np.array(InX[gate_state]),
-                                          axis=1),
-                        oExpected: np.expand_dims(
-                            np.array(OutX[gate_state]),
-                            axis=0)
-                    })
+                    trainO, oO, errorO, wO, bO, xO \
+                        = sess.run(
+                        [train, oRaw, error, w2, b2, x],
+                        feed_dict={
+                            x: np.expand_dims(np.array(InX[gate_state]),
+                                              axis=1),
+                            oExpected: np.expand_dims(
+                                np.array(OutX[gate_state]),
+                                axis=0)
+                        })
 
                 tb_summary = None
                 if ENABLE_TENSORBOARD:
@@ -82,7 +102,7 @@ def train_gate():
                 if ENABLE_TENSORBOARD:
                     tb_writer.add_summary(tb_summary, gate_state)
 
-                if (0 == i % (EPOCH / 10)):
+                if 0 == i % (EPOCH / 10):
                     print("x: " + str(xO))
                     print("o: " + str(oO[0][0]))
                     # print("error: " + str(errorO[0]))
@@ -93,23 +113,11 @@ def train_gate():
             if 0 == i % (EPOCH / 10):
                 print("error: " + str(errorTotal))
                 print("\n")
-
-                randNum = random.randint(1, 100000)
-                path = os.path.normpath(MODEL_PATH % (i, randNum))
-                saver.save(sess, path)
-
-
-def test_gate():
-    w = tf.get_variable("w", shape=[2, 1])
-    b = tf.get_variable("b", shape=[1])
-
-    saver = tf.train.Saver()
-    with tf.Session() as sess:
-        saver.restore(sess, MODEL_PATH % (9000, 49074))
-        print(w.eval())
-        print(b.eval())
-
+                if not TEST:
+                    randNum = random.randint(1, 100000)
+                    path = os.path.normpath(MODEL_PATH % (i, randNum))
+                    saver.save(sess, path)
 
 if __name__ == "__main__":
-    train_gate()
-    # test_gate()
+    # train_gate(TEST=False)
+    train_gate(TEST=True, MODEL_PATH_ARGS=(4000, 80816))
