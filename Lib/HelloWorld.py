@@ -7,7 +7,7 @@ import os
 MODEL_PATH = "../model/model_%s_%s.ckpt"
 TB_PATH = "../logs/1/train"
 EPOCH = 10000
-LEARNING_RATE = 0.002
+LEARNING_RATE = 0.02
 ENABLE_TENSORBOARD = False
 
 
@@ -15,19 +15,18 @@ def train_gate():
     InX = [[1, 1], [1, 0], [0, 1], [0, 0]]
     OutX = [1, 0, 0, 0]
 
-    # x = tf.Variable([[2.0], [-2.0]], dtype=tf.float32)
     x = tf.placeholder(dtype=tf.float32, shape=[2, 1])
 
-    w1 = tf.Variable([[1.0], [2.0]], dtype=tf.float32, name="w1")
-    b1 = tf.Variable([2.0], dtype=tf.float32, name="b1")
+    w1 = tf.get_variable("w1", dtype=tf.float32, shape=[2, 1], initializer=tf.constant_initializer([[1.0], [2.0]]))
+    b1 = tf.get_variable("b1", dtype=tf.float32, shape=[2, 1], initializer=tf.constant_initializer([2.0]))
     o1 = tf.add(tf.matmul(tf.transpose(x), w1), b1)
 
-    w2 = tf.Variable([[3.0], [8.0]], dtype=tf.float32, name="w2")
-    b2 = tf.Variable([14.0], dtype=tf.float32, name="b2")
+    w2 = tf.get_variable("w2", dtype=tf.float32, shape=[2, 1], initializer=tf.constant_initializer([[3.0], [8.0]]))
+    b2 = tf.get_variable("b2", dtype=tf.float32, shape=[2, 1], initializer=tf.constant_initializer([14.0]))
     o2 = tf.add(tf.matmul(tf.transpose(x), w2), b2)
 
-    w = tf.Variable([12.0, -2.0], dtype=tf.float32, name="w")
-    b = tf.Variable(-4.0, dtype=tf.float32, name="b")
+    w = tf.get_variable("w", dtype=tf.float32, shape=[2, 1], initializer=tf.constant_initializer([[2.0], [1.0]]))
+    b = tf.get_variable("b", dtype=tf.float32, shape=[2, 1], initializer=tf.constant_initializer([-4.0]))
     oRaw = tf.sigmoid(tf.add(tf.add(tf.multiply(w[0], o1), tf.multiply(w[1], o2)), b))
     o = tf.cond(oRaw[0][0] > 0, lambda: tf.divide(oRaw[0][0], oRaw[0][0]), lambda: tf.subtract(oRaw[0][0], oRaw[0][0]))
 
@@ -36,7 +35,7 @@ def train_gate():
     # error = tf.add(tf.square(diff), tf.sqrt(tf.abs(diff)))
     # train = tf.train.AdamOptimizer(learning_rate=LEARNING_RATE).minimize(error)
     error = tf.square(tf.subtract(oRaw[0][0], oExpected))
-    train = tf.train.AdamOptimizer(learning_rate=0.002).minimize(error)
+    train = tf.train.AdamOptimizer(learning_rate=LEARNING_RATE).minimize(error)
     saver = tf.train.Saver(max_to_keep=10)
 
     if ENABLE_TENSORBOARD:
