@@ -76,7 +76,7 @@ def train_gate(TEST=False,
             for batch_itr in range(BATCH_SIZE):
                 tb_merge = None
                 inputArray = InX(batch_itr)
-                outputArray = OutX(inputArray)
+                outputArray = OutX(batch_itr)
 
                 if TEST:
                     oO, errorO, wO, bO, oO2, xO \
@@ -111,7 +111,8 @@ def train_gate(TEST=False,
                     tb_writer.add_summary(tb_summary, batch_itr)
 
                 if 0 == i % (EPOCH / 10):
-                    print("x: " + str(xO))
+                    # print("x: " + str(xO))
+                    print("x: " + str(batch_itr))
                     # print("o2: " + str(oO2))
                     print("o: " + str(oO[0][0]))
                     # print("error: " + str(errorO[0]))
@@ -128,16 +129,43 @@ def train_gate(TEST=False,
                     saver.save(sess, path)
 
 
+#################################################################################################
+#################################################################################################
+# Represent each input by an array of its binary digits.
+def binary_encode(i, num_digits):
+    return np.array([i >> d & 1 for d in range(num_digits)])
+
+
+# The actual method to check is number prime or not, we only use this to generate data
+def is_prime(n):
+    if n % 2 == 0 and n > 2:
+        return False
+    return all(n % i for i in range(3, int(np.math.sqrt(n)) + 1, 2))
+
+
+# One-hot encode the desired outputs: ["not prime", "prime"]
+def prime_encode(i):
+    if is_prime(i):
+        return np.array([0, 1])
+    else:
+        return np.array([1, 0])
+
+
+NUM_DIGITS = 8
+
 def InputCB(i):
-    return [[1, 1, 1], [1, 0, 1], [0, 1, 1], [0, 0, 1]][i]
+    return binary_encode(i, NUM_DIGITS)
 
 
 def OutputCB(input):
-    return input[0] & input[1]
-
+    if is_prime(input):
+        return 1
+    else:
+        return 0
 
 if __name__ == "__main__":
-    train_gate(SHAPE=[3, 1],
+    train_gate(SHAPE=[NUM_DIGITS, 1],
                InX=InputCB,
-               OutX=OutputCB)
+               OutX=OutputCB,
+               BATCH_SIZE=20)
     # train_gate(TEST=True, MODEL_PATH_ARGS=(4000, 80816))
