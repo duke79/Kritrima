@@ -10,8 +10,8 @@ def train_gate(TEST=False,
                LEARNING_RATE=0.02,
                BATCH_SIZE=4,
                SHAPE=[2, 1],
-               InX=[[1, 1], [1, 0], [0, 1], [0, 0]],
-               OutX=[1, 0, 0, 0],
+               InX=None,
+               OutX=None,
                ENABLE_TENSORBOARD=False,
                MODEL_PATH_ARGS=(4000, 80816)):
     MODEL_PATH = "../model/model_%s_%s.ckpt"
@@ -75,15 +75,18 @@ def train_gate(TEST=False,
             errorTotal = 0.0
             for batch_itr in range(BATCH_SIZE):
                 tb_merge = None
+                inputArray = InX(batch_itr)
+                outputArray = OutX(inputArray)
+
                 if TEST:
                     oO, errorO, wO, bO, oO2, xO \
                         = sess.run(
                         [oRaw, error, w2, b2, o2, x],
                         feed_dict={
-                            x: np.expand_dims(np.array(InX[batch_itr]),
+                            x: np.expand_dims(np.array(inputArray),
                                               axis=1),
                             oExpected: np.expand_dims(
-                                np.array(OutX[batch_itr]),
+                                np.array(outputArray),
                                 axis=0)
                         })
                 else:
@@ -93,10 +96,10 @@ def train_gate(TEST=False,
                         = sess.run(
                         [train, oRaw, error, w2, b2, o2, x],
                         feed_dict={
-                            x: np.expand_dims(np.array(InX[batch_itr]),
+                            x: np.expand_dims(np.array(inputArray),
                                               axis=1),
                             oExpected: np.expand_dims(
-                                np.array(OutX[batch_itr]),
+                                np.array(outputArray),
                                 axis=0)
                         })
 
@@ -125,8 +128,16 @@ def train_gate(TEST=False,
                     saver.save(sess, path)
 
 
+def InputCB(i):
+    return [[1, 1, 1], [1, 0, 1], [0, 1, 1], [0, 0, 1]][i]
+
+
+def OutputCB(input):
+    return input[0] & input[1]
+
+
 if __name__ == "__main__":
     train_gate(SHAPE=[3, 1],
-               InX=[[1, 1, 1], [1, 0, 1], [0, 1, 1], [0, 0, 1]],
-               OutX=[1, 0, 0, 0])
+               InX=InputCB,
+               OutX=OutputCB)
     # train_gate(TEST=True, MODEL_PATH_ARGS=(4000, 80816))
