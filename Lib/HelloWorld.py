@@ -142,30 +142,38 @@ def is_prime(n):
         return False
     return all(n % i for i in range(3, int(np.math.sqrt(n)) + 1, 2))
 
-
-# One-hot encode the desired outputs: ["not prime", "prime"]
-def prime_encode(i):
-    if is_prime(i):
-        return np.array([0, 1])
+def is_even(n):
+    if n%2 == 0:
+        return True
     else:
-        return np.array([1, 0])
+        return False
 
 
-NUM_DIGITS = 8
+NUM_DIGITS = 12
+
 
 def InputCB(i):
     return binary_encode(i, NUM_DIGITS)
 
 
 def OutputCB(input):
-    if is_prime(input):
+    if is_even(input):
         return 1
     else:
         return 0
 
+
 if __name__ == "__main__":
-    train_gate(SHAPE=[NUM_DIGITS, 1],
-               InX=InputCB,
-               OutX=OutputCB,
-               BATCH_SIZE=20)
-    # train_gate(TEST=True, MODEL_PATH_ARGS=(4000, 80816))
+    def train(TEST=False, MODEL_PATH_ARGS=None):
+        train_gate(TEST=False, MODEL_PATH_ARGS=None,
+                   SHAPE=[NUM_DIGITS, 1],
+                   InX=InputCB,
+                   OutX=OutputCB,
+                   BATCH_SIZE=100,
+                   EPOCH=100)
+
+    # Train
+    train()
+
+    #Test
+    # train(TEST=True, MODEL_PATH_ARGS=(240, 1214))
