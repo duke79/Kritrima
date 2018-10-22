@@ -1,3 +1,5 @@
+# https://www.kaggle.com/parithy/stock-prediction
+
 from keras import preprocessing
 
 1  # This Python 3 environment comes with many helpful analytics libraries installed
@@ -24,6 +26,11 @@ df.tail()
 df = df.loc[df['symbol'] == 'CSCO']
 print(df.tail())
 
+from sklearn import preprocessing, svm
+from sklearn.model_selection import cross_validate
+from sklearn.linear_model import LinearRegression
+import math
+
 forecast_col = 'close'
 df.fillna(value=-99999, inplace=True)
 forecast_out = int(np.math.ceil(0.01 * len(df)))
@@ -42,7 +49,7 @@ X_lately = X[-forecast_out:]
 X = X[:-forecast_out]
 df.dropna(inplace=True)
 y = np.array(df['label'])
-X_train, X_test, y_train, y_test = cross_validation.train_test_split(X, y, test_size=0.2)
+X_train, X_test, y_train, y_test = cross_validate.train_test_split(X, y, test_size=0.2)
 
 clf = LinearRegression(n_jobs=-1)
 clf.fit(X_train, y_train)
