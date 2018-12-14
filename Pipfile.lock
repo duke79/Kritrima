@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "50a3ac912c4143edd9888579d41521165b8ccf1536fd0314a76460c4522b65b6"
+            "sha256": "bdc8c7dbc5e3786d1859ef031e39c8779fa9a119ba033e0a9ca491fbabf9b10b"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -293,6 +293,14 @@
             "index": "pypi",
             "version": "==3.4.4.19"
         },
+        "pafy": {
+            "hashes": [
+                "sha256:c6506070065829a0419276fc6a2649a5d35e77efdc91b792c2db8576d8b779d9",
+                "sha256:e842dc589a339a870b5869cc3802f2e95824edf347f65128223cd5ebdff21024"
+            ],
+            "index": "pypi",
+            "version": "==0.5.4"
+        },
         "pandas": {
             "hashes": [
                 "sha256:11975fad9edbdb55f1a560d96f91830e83e29bed6ad5ebf506abda09818eaf60",
@@ -545,6 +553,14 @@
             ],
             "markers": "python_version >= '3'",
             "version": "==0.32.3"
+        },
+        "youtube-dl": {
+            "hashes": [
+                "sha256:753befcc6ab05eed1857c3d42ad45e72e9777a78b137051c21834648f71626a3",
+                "sha256:eaf1cd7ea0b599268a9c1f506afa8945ec85e6b4f7243108f9b40a150097bfbe"
+            ],
+            "index": "pypi",
+            "version": "==2018.12.9"
         }
     },
     "develop": {}

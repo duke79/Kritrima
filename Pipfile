@@ -13,6 +13,8 @@ sklearn = "*"
 opencv-python = "*"
 mss = "*"
 pillow = "*"
+pafy = "*"
+youtube-dl = "*"
 
 [dev-packages]
 
