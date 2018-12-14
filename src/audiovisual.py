@@ -203,7 +203,6 @@ class UnusedForNow:
 
 class AudioVisual:
     def save_video_from_yt(self):
-        # from __future__ import unicode_literals
         import youtube_dl
 
         ydl_opts = {
@@ -212,9 +211,9 @@ class AudioVisual:
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             ydl.download(['https://www.youtube.com/watch?v=BaW_jenozKc'])
 
-    def load_video_frames_from_disk(self, file_path):
-        log.info("Loading video frames for : \"" + os.path.basename(file_path) + "\"")
-        vidcap = cv2.VideoCapture(file_path)
+    def load_video_frames_from_disk(self, path):
+        log.info("Loading video frames for : \"" + os.path.basename(path) + "\"")
+        vidcap = cv2.VideoCapture(path)
         success, image = vidcap.read()
         count = 0
         while success:
@@ -222,8 +221,35 @@ class AudioVisual:
             success, image = vidcap.read()
             count += 1
 
+    def extract_audio_from_video(self, vid_path, aud_path="audio.wav"):
+        log.info("Extracting audio from {0} into {1}".format(vid_path, aud_path))
+        if os.path.exists(aud_path):
+            os.remove(aud_path)
+
+        import subprocess
+        command = "ffmpeg -i \"{0}\" -ab 160k -acodec pcm_s16le -ac 2 -ar 44100 -vn \"{1}\"".format(vid_path, aud_path)
+        process = subprocess.Popen(command, shell=True,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+
+        # wait for the process to terminate
+        for line in process.stdout:
+            log.debug(line)
+        for line in process.stderr:
+            log.debug(line)
+        errcode = process.returncode
+        return aud_path
+
     def save_picture(self, path, image):
         cv2.imwrite(path, image)
+
+    def save_video_frames(self, vid_path):
+        for index, img in av.load_video_frames_from_disk(vid_path):
+            vid_frames_dir = os.path.join(output_dir, "frames")
+            if not os.path.exists(vid_frames_dir):
+                os.makedirs(vid_frames_dir)
+            output_file = os.path.join(vid_frames_dir, os.path.splitext(file)[0] + "_frame_" + str(index) + ".jpeg")
+            av.save_picture(output_file, img)  # save frame as JPEG file
 
 
 if __name__ == "__main__":
@@ -231,9 +257,5 @@ if __name__ == "__main__":
     # av.save_video_from_yt()
     for file in os.listdir(output_dir):
         file_path = os.path.join(output_dir, file)
-        for index, img in av.load_video_frames_from_disk(file_path):
-            vid_frames_dir = os.path.join(output_dir, "frames")
-            if not os.path.exists(vid_frames_dir):
-                os.makedirs(vid_frames_dir)
-            output_file = os.path.join(vid_frames_dir, os.path.splitext(file)[0] + "_frame_" + str(index) + ".jpeg")
-            av.save_picture(output_file, img)  # save frame as JPEG file
+        # av.save_video_frames(file_path)
+        av.extract_audio_from_video(file_path, os.path.join(output_dir, file + ".wav"))

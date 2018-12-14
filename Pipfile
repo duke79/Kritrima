@@ -15,6 +15,7 @@ mss = "*"
 pillow = "*"
 pafy = "*"
 youtube-dl = "*"
+ffmpeg-python = "*"
 
 [dev-packages]
 
