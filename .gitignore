@@ -2,3 +2,4 @@
 /venv/*
 /model/*
 /logs/*
+/src/output/
