@@ -6,7 +6,7 @@ import numpy
 import os
 
 # Meta settings
-TRAIN_OVER_TEST = False
+TRAIN_OVER_TEST = True
 EPOCH = 50
 BATCH = 64
 GENERATED_LENGTH = 50
@@ -26,56 +26,67 @@ import tensorflow
 from keras import Sequential
 from keras.utils import np_utils
 
-data_dir = os.path.join(os.path.dirname(os.path.abspath(os.curdir)), "data")
-alices_adventures = os.path.join(data_dir, "Alice\'s Adventures in Wonderland, by Lewis Carroll - gutenberg.org.txt")
 
-log.info("Fetching the text from " + alices_adventures)
-raw_text = open(alices_adventures, encoding="utf-8").read()
-raw_text = raw_text.lower()
+def get_text():
+    data_dir = os.path.join(os.path.dirname(os.path.abspath(os.curdir)), "data")
+    alices_adventures = os.path.join(data_dir,
+                                     "Alice\'s Adventures in Wonderland, by Lewis Carroll - gutenberg.org.txt")
 
-# Create character to integer dictionary
-log.info("Preparing data...")
-chars = sorted(list(set(raw_text)))
-char_to_int = dict((c, i) for i, c in enumerate(chars))
-int_to_char = dict((i, c) for i, c in enumerate(chars))
-
-# Create patterns (dataX), each a 100 characters long slice of text
-# dataY is the 101th character for each pattern
-len_text = len(raw_text)
-len_vocab = len(chars)
-
-seq_length = 100
-dataX = []
-dataY = []
-for i in range(0, len_text - seq_length, 1):
-    seq_in = raw_text[i:i + seq_length]
-    seq_out = raw_text[i + seq_length]
-    dataX.append([char_to_int[char] for char in seq_in])
-    dataY.append(char_to_int[seq_out])
-
-len_patterns = len(dataX)
-
-# reshape X to be [samples, time steps, features]
-X = numpy.reshape(dataX, (len_patterns, seq_length, 1))
-# pyplot.imshow(X)
-
-# normalize
-X = X / float(len_vocab)
-# one-hot encode the output variable
-Y = np_utils.to_categorical(dataY)
-
-# define the LSTM model
-log.info("Creating model...")
-model = Sequential()
-model.add(LSTM(256, input_shape=(X.shape[1], X.shape[2]), return_sequences=True))
-model.add(Dropout(0.2))
-model.add(LSTM(256))
-model.add(Dropout(0.2))
-model.add(Dense(Y.shape[1], activation='softmax'))
-model.compile(loss='categorical_crossentropy', optimizer='adam')
+    log.info("Fetching the text from " + alices_adventures)
+    raw_text = open(alices_adventures, encoding="utf-8").read()
+    raw_text = raw_text.lower()
+    return raw_text
 
 
-def train():
+def prepare_data(text):
+    # Create character to integer dictionary
+    log.info("Preparing data...")
+    chars = sorted(list(set(text)))
+    char_to_int = dict((c, i) for i, c in enumerate(chars))
+    int_to_char = dict((i, c) for i, c in enumerate(chars))
+
+    # Create patterns (dataX), each a 100 characters long slice of text
+    # dataY is the 101th character for each pattern
+    len_text = len(text)
+    len_vocab = len(chars)
+
+    seq_length = 100
+    dataX = []
+    dataY = []
+    for i in range(0, len_text - seq_length, 1):
+        seq_in = text[i:i + seq_length]
+        seq_out = text[i + seq_length]
+        dataX.append([char_to_int[char] for char in seq_in])
+        dataY.append(char_to_int[seq_out])
+
+    len_patterns = len(dataX)
+
+    # reshape X to be [samples, time steps, features]
+    X = numpy.reshape(dataX, (len_patterns, seq_length, 1))
+    # pyplot.imshow(X)
+
+    # normalize
+    X = X / float(len_vocab)
+    # one-hot encode the output variable
+    Y = np_utils.to_categorical(dataY)
+    return X, Y, dataX, dataY
+
+
+def create_model(x, y):
+    # define the LSTM model
+    log.info("Creating model...")
+    model = Sequential()
+    model.add(LSTM(256, input_shape=(tuple(x.shape[1:])), return_sequences=True))
+    model.add(Dropout(0.2))
+    model.add(LSTM(256))
+    model.add(Dropout(0.2))
+    model.add(Dense(y.shape[1], activation='softmax'))
+    model.compile(loss='categorical_crossentropy', optimizer='adam')
+    return model
+
+
+def train(x, y):
+    model = create_model(x, y)
     log.info("Checking GPU...")
     sess = tensorflow.Session(config=tensorflow.ConfigProto(log_device_placement=True))
     log.info("Training model...")
@@ -84,10 +95,11 @@ def train():
     checkpoint = ModelCheckpoint(filepath, monitor='loss', verbose=1, save_best_only=True, mode='min')
     callbacks_list = [checkpoint]
     # fit the model
-    model.fit(X, Y, epochs=EPOCH, batch_size=BATCH, callbacks=callbacks_list)
+    model.fit(x, y, epochs=EPOCH, batch_size=BATCH, callbacks=callbacks_list)
 
 
-def test():
+def test(x, y, data_x, data_y):
+    model = create_model(x, y)
     log.info("Loading model weights...")
     p = re.compile(MODEL_FILE_PREFIX + '-([0-9]*)-([0-9]*\.[0-9]*)\.hdf5', re.IGNORECASE)
     model_file = None
@@ -105,8 +117,8 @@ def test():
 
     log.info("Testing generation...")
     # pick a random seed
-    start = numpy.random.randint(0, len(dataX) - 1)
-    pattern = dataX[start]
+    start = numpy.random.randint(0, len(data_x) - 1)
+    pattern = data_x[start]
     log.info("Seed:")
     log.info("\"" + ''.join([int_to_char[value] for value in pattern]) + "\"")
     # generate characters
@@ -123,7 +135,12 @@ def test():
     print("\nDone.")
 
 
+char_to_int = dict()
+int_to_char = dict()
+len_vocab = 0
+raw_text = get_text()
+X, Y, data_X, data_Y = prepare_data(raw_text)
 if TRAIN_OVER_TEST:
-    train()
+    train(X, Y)
 else:
-    test()
+    test(X, Y, data_X, data_Y)
