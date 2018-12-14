@@ -10,6 +10,9 @@ keras = "*"
 pandas = "*"
 matplotlib = "*"
 sklearn = "*"
+opencv-python = "*"
+mss = "*"
+pillow = "*"
 
 [dev-packages]
 
