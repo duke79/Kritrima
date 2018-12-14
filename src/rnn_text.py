@@ -6,7 +6,7 @@ import numpy
 import os
 
 # Meta settings
-TRAIN_OVER_TEST = True
+TRAIN_OVER_TEST = False
 EPOCH = 50
 BATCH = 64
 GENERATED_LENGTH = 50
@@ -94,7 +94,8 @@ def test():
     last_loss = 9999999999999.9
     files = os.listdir(os.curdir)
     for file in files:
-        if file[:19] == MODEL_FILE_PREFIX:
+        file_prefix = file[:len(MODEL_FILE_PREFIX) + 1]
+        if file_prefix == MODEL_FILE_PREFIX + "-":
             m = p.match(file)
             loss = float(m.group(2))
             if not model_file or loss < last_loss:
