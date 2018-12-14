@@ -9,6 +9,8 @@ import os
 from matplotlib import pyplot
 import matplotlib.animation as animation
 import pylab
+import numpy as np
+import scipy.io.wavfile
 
 logging.basicConfig(level=logging.INFO)
 logging.getLogger().setLevel(logging.INFO)  # 'CRITICAL', 'FATAL', 'ERROR', 'WARN', 'WARNING', 'INFO', 'DEBUG', 'NOTSET'
@@ -238,7 +240,14 @@ class AudioVisual:
         for line in process.stderr:
             log.debug(line)
         errcode = process.returncode
+
         return aud_path
+
+    def load_audio_data_from_disk(self, path):
+        log.info("Loading audio from {0}".format(path))
+        rate, data = scipy.io.wavfile.read(path)
+        # sin_data = np.sin(data)
+        return data
 
     def save_picture(self, path, image):
         cv2.imwrite(path, image)
@@ -256,6 +265,8 @@ if __name__ == "__main__":
     av = AudioVisual()
     # av.save_video_from_yt()
     for file in os.listdir(output_dir):
-        file_path = os.path.join(output_dir, file)
+        vid_path = os.path.join(output_dir, file)
         # av.save_video_frames(file_path)
-        av.extract_audio_from_video(file_path, os.path.join(output_dir, file + ".wav"))
+        aud_path = os.path.join(output_dir, file + ".wav")
+        # av.extract_audio_from_video(vid_path, aud_path)
+        data = av.load_audio_data_from_disk(aud_path)
