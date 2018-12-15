@@ -8,9 +8,10 @@ import os
 # Meta settings
 from src import output_dir
 
-TRAIN_OVER_TEST = True
+TRAIN_OVER_TEST = False
 EPOCH = 50
-BATCH = 64
+BATCH = 32
+SEQUENCE_LENGTH = 20
 GENERATED_LENGTH = 50
 MODEL_FILE_PREFIX = os.path.basename(__file__)
 
@@ -52,19 +53,18 @@ def prepare_data(text):
     len_text = len(text)
     len_vocab = len(chars)
 
-    seq_length = 100
     dataX = []
     dataY = []
-    for i in range(0, len_text - seq_length, 1):
-        seq_in = text[i:i + seq_length]
-        seq_out = text[i + seq_length]
+    for i in range(0, len_text - SEQUENCE_LENGTH, 1):
+        seq_in = text[i:i + SEQUENCE_LENGTH]
+        seq_out = text[i + SEQUENCE_LENGTH]
         dataX.append([char_to_int[char] for char in seq_in])
         dataY.append(char_to_int[seq_out])
 
     len_patterns = len(dataX)
 
     # reshape X to be [samples, time steps, features]
-    X = numpy.reshape(dataX, (len_patterns, seq_length, 1))
+    X = numpy.reshape(dataX, (len_patterns, SEQUENCE_LENGTH, 1))
     # pyplot.imshow(X)
 
     # normalize
