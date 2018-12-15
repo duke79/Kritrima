@@ -71,7 +71,7 @@ def prepare_data(text):
     X = X / float(len_vocab)
     # one-hot encode the output variable
     Y = np_utils.to_categorical(dataY)
-    return X, Y, dataX, dataY, char_to_int, int_to_char
+    return X, Y, dataX, dataY, char_to_int, int_to_char, len_vocab
 
 
 def create_model(x, y):
@@ -115,7 +115,7 @@ def test(x, y, data_x, data_y):
             if not model_file or loss < last_loss:
                 last_loss = loss
                 model_file = file
-    model.load_weights(model_file)
+    model.load_weights(os.path.join(output_dir, model_file))
 
     log.info("Testing generation...")
     # pick a random seed
@@ -129,6 +129,7 @@ def test(x, y, data_x, data_y):
         x = x / float(len_vocab)
         prediction = model.predict(x, verbose=0)
         index = numpy.argmax(prediction)
+        srt = prediction.argsort()
         result = int_to_char[index]
         seq_in = [int_to_char[value] for value in pattern]
         sys.stdout.write(result)
@@ -137,9 +138,8 @@ def test(x, y, data_x, data_y):
     print("\nDone.")
 
 
-len_vocab = 0
 raw_text = get_text()
-X, Y, data_X, data_Y, char_to_int, int_to_char = prepare_data(raw_text)
+X, Y, data_X, data_Y, char_to_int, int_to_char, len_vocab = prepare_data(raw_text)
 if TRAIN_OVER_TEST:
     train(X, Y)
 else:
