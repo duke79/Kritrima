@@ -12,13 +12,11 @@ import pylab
 import numpy as np
 import scipy.io.wavfile
 
+from src import output_dir
+
 logging.basicConfig(level=logging.INFO)
 logging.getLogger().setLevel(logging.INFO)  # 'CRITICAL', 'FATAL', 'ERROR', 'WARN', 'WARNING', 'INFO', 'DEBUG', 'NOTSET'
 log = logging.getLogger(__name__)
-
-output_dir = os.path.abspath("output")
-if not os.path.exists(output_dir):
-    os.makedirs(output_dir)
 
 
 class UnusedForNow:

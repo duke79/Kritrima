@@ -6,6 +6,8 @@ import numpy
 import os
 
 # Meta settings
+from src import output_dir
+
 TRAIN_OVER_TEST = True
 EPOCH = 50
 BATCH = 64
@@ -69,7 +71,7 @@ def prepare_data(text):
     X = X / float(len_vocab)
     # one-hot encode the output variable
     Y = np_utils.to_categorical(dataY)
-    return X, Y, dataX, dataY
+    return X, Y, dataX, dataY, char_to_int, int_to_char
 
 
 def create_model(x, y):
@@ -91,7 +93,7 @@ def train(x, y):
     sess = tensorflow.Session(config=tensorflow.ConfigProto(log_device_placement=True))
     log.info("Training model...")
     # define the checkpoint
-    filepath = MODEL_FILE_PREFIX + "-{epoch:02d}-{loss:.4f}.hdf5"
+    filepath = os.path.join(output_dir, MODEL_FILE_PREFIX + "-{epoch:02d}-{loss:.4f}.hdf5")
     checkpoint = ModelCheckpoint(filepath, monitor='loss', verbose=1, save_best_only=True, mode='min')
     callbacks_list = [checkpoint]
     # fit the model
@@ -104,7 +106,7 @@ def test(x, y, data_x, data_y):
     p = re.compile(MODEL_FILE_PREFIX + '-([0-9]*)-([0-9]*\.[0-9]*)\.hdf5', re.IGNORECASE)
     model_file = None
     last_loss = 9999999999999.9
-    files = os.listdir(os.curdir)
+    files = os.listdir(os.path.join(output_dir, os.curdir))
     for file in files:
         file_prefix = file[:len(MODEL_FILE_PREFIX) + 1]
         if file_prefix == MODEL_FILE_PREFIX + "-":
@@ -135,11 +137,9 @@ def test(x, y, data_x, data_y):
     print("\nDone.")
 
 
-char_to_int = dict()
-int_to_char = dict()
 len_vocab = 0
 raw_text = get_text()
-X, Y, data_X, data_Y = prepare_data(raw_text)
+X, Y, data_X, data_Y, char_to_int, int_to_char = prepare_data(raw_text)
 if TRAIN_OVER_TEST:
     train(X, Y)
 else:
