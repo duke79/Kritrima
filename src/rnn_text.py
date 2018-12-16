@@ -9,10 +9,11 @@ import os
 from src import output_dir
 
 TRAIN_OVER_TEST = True
+CONTINUE_TRAINING_FROM_DISK = True
 EPOCH = 100
-BATCH = 256
-SEQUENCE_LENGTH = 200
-GENERATED_LENGTH = 50
+BATCH = 32
+SEQUENCE_LENGTH = 40
+GENERATED_LENGTH = 200
 MODEL_FILE_PREFIX = os.path.basename(__file__)
 
 # Create logger
@@ -89,6 +90,8 @@ def create_model(x, y):
 
 def train(x, y):
     model = create_model(x, y)
+    if CONTINUE_TRAINING_FROM_DISK:
+        load_weights(model)
     log.info("Checking GPU...")
     sess = tensorflow.Session(config=tensorflow.ConfigProto(log_device_placement=True))
     log.info("Training model...")
@@ -100,9 +103,7 @@ def train(x, y):
     model.fit(x, y, epochs=EPOCH, batch_size=BATCH, callbacks=callbacks_list)
 
 
-def test(x, y, data_x, data_y):
-    model = create_model(x, y)
-    log.info("Loading model weights...")
+def load_weights(model):
     p = re.compile(MODEL_FILE_PREFIX + '-([0-9]*)-([0-9]*\.[0-9]*)\.hdf5', re.IGNORECASE)
     model_file = None
     last_loss = 9999999999999.9
@@ -115,7 +116,14 @@ def test(x, y, data_x, data_y):
             if not model_file or loss < last_loss:
                 last_loss = loss
                 model_file = file
-    model.load_weights(os.path.join(output_dir, model_file))
+    if model_file:
+        model.load_weights(os.path.join(output_dir, model_file))
+
+
+def test(x, y, data_x, data_y):
+    model = create_model(x, y)
+    log.info("Loading model weights...")
+    load_weights(model)
 
     log.info("Testing generation...")
     # pick a random seed
