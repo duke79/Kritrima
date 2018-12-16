@@ -8,10 +8,10 @@ import os
 # Meta settings
 from src import output_dir
 
-TRAIN_OVER_TEST = False
-EPOCH = 50
-BATCH = 32
-SEQUENCE_LENGTH = 20
+TRAIN_OVER_TEST = True
+EPOCH = 100
+BATCH = 256
+SEQUENCE_LENGTH = 200
 GENERATED_LENGTH = 50
 MODEL_FILE_PREFIX = os.path.basename(__file__)
 
